@@ -1,3 +1,0 @@
-rumps 
-setuptools
-pyinstaller

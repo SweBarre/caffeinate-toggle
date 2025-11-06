@@ -1,75 +1,37 @@
-PYTHON := python3
-REQUIRED_PYTHON_VERSION := 3.11
-VENV_NAME := ct_venv
-VENV_PATH := ./$(VENV_NAME)
-APP_NAME := Caffeinate\ Toggle
-APP_BUNDLE := dist/$(APP_NAME).app
-INSTALL_PATH := /Applications/$(APP_NAME).app
+APP_NAME = CaffeinateToggle
+APP_DIR = $(HOME)/Library/Application\ Support/$(APP_NAME)
+AGENT_DIR = $(HOME)/Library/LaunchAgents
+AGENT_PLIST = $(AGENT_DIR)/nu.rre.caffeinate-toggle.plist
 
-# Default target
-.DEFAULT_GOAL := build
 
-# ----------------------------------------------
-# Helper: check Python version and venv
-# ----------------------------------------------
-define check_env
-	@if [ "$${VIRTUAL_ENV##*/}" != "$(VENV_NAME)" ]; then \
-		echo "⚠️  You are not in the $(VENV_NAME) virtual environment."; \
-		echo "👉  Run 'source $(VENV_PATH)/bin/activate' and try again."; \
-		exit 1; \
-	fi; \
-	CURRENT_PYTHON_VERSION=$$($(PYTHON) -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")'); \
-	if [ "$$CURRENT_PYTHON_VERSION" != "$(REQUIRED_PYTHON_VERSION)" ]; then \
-		echo "❌ Python version $$CURRENT_PYTHON_VERSION found, but $(REQUIRED_PYTHON_VERSION) is required."; \
-		echo "👉  Please recreate your virtual environment with Python $(REQUIRED_PYTHON_VERSION)."; \
-		exit 1; \
-	fi
-endef
+init:
+	go mod init github.com/SweBarre/caffeinate-toggle
+	go mod tidy
 
-.PHONY: dev clean build install
+build:
+	go build -o dist/$(APP_NAME) ./cmd/caffeinate-toggle
 
-# ----------------------------------------------
-# Install dev dependencies in the virtual env
-# ----------------------------------------------
-dev:
-	@$(call check_env)
-	@echo "📦 Installing requirements..."
-	@pip install -r requirements.txt
-	@echo "✅ Development environment ready."
+install: build
+	@echo "Installing $(APP_NAME)..."
+	@mkdir -p $(APP_DIR)
+	@cp dist/$(APP_NAME) $(APP_DIR)/
+	@chmod +x $(APP_DIR)/$(APP_NAME)
+	@mkdir -p $(AGENT_DIR)
+	@cp nu.rre.caffeinate-toggle.plist $(AGENT_PLIST)
+	@sed -i '' 's|__BINARY_PATH__|$(APP_DIR)/$(APP_NAME)|g' $(AGENT_PLIST)
+	@launchctl load -w $(AGENT_PLIST)
+	@echo "$(APP_NAME) installed and set to start on login."
 
-# ----------------------------------------------
-# Clean up build artifacts
-# ----------------------------------------------
+uninstall:
+	@echo "Uninstalling $(APP_NAME)..."
+	@launchctl unload -w $(AGENT_PLIST) || true
+	@rm -f $(AGENT_PLIST)
+	@rm -rf $(APP_DIR)
+	@echo "$(APP_NAME) removed."
+
+
+run:
+	go run ./cmd/caffeinate-toggle
+
 clean:
-	@echo "🧹 Cleaning build and dist directories..."
-	@rm -rf build dist
-	@echo "✅ Clean complete."
-
-# ----------------------------------------------
-# Build the macOS app bundle using PyInstaller
-# ----------------------------------------------
-build: clean dev
-	@$(call check_env)
-	@echo "🏗️  Building $(APP_NAME)..."
-	@pyinstaller \
-		--noconfirm \
-		--windowed \
-		--name "Caffeinate Toggle" \
-		--osx-bundle-identifier "nu.rre.caffeinate-toggle" \
-		caffeinate_toggle.py
-	@/usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "dist/Caffeinate Toggle.app/Contents/Info.plist" 2>/dev/null || \
-		/usr/libexec/PlistBuddy -c "Set :LSUIElement true" "dist/Caffeinate Toggle.app/Contents/Info.plist"
-	@echo "✅ Build complete: $(APP_BUNDLE)"
-
-# ----------------------------------------------
-# Install the app to /Applications
-# ----------------------------------------------
-install:
-	@echo "📦 Installing $(APP_NAME) to /Applications..."
-	@if [ ! -d $(APP_BUNDLE) ]; then \
-		echo "❌ Build not found! Run 'make build' first."; \
-		exit 1; \
-	fi
-	@rm -rf "$(INSTALL_PATH)"
-	@echo "cp -R $(APP_BUNDLE) /Applications/"
-	@echo "✅ Installed to /Applications."
+	rm -rf dist

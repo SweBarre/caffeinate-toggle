@@ -1,27 +1,19 @@
-# Caffeinate Toggle
+# CaffeinateToggle
 
-Caffinate Toggle is a small tool written in python to add an application indicator for the caffeinate tool
+CaffinateToggle is a small tool written in Go to add an application indicator for the caffeinate tool
+<img width="241" height="219" alt="Image" src="https://github.com/user-attachments/assets/b3414551-873a-4011-9060-c4116c42fdfc" />
 
-<img width="214" height="71" alt="Image" src="https://github.com/user-attachments/assets/e5006817-aff2-4814-af55-ad39765ccbc1" />
+<img width="239" height="248" alt="Image" src="https://github.com/user-attachments/assets/c98b1941-6949-4212-8c0c-3aedb45f2555" />
 
-<img width="288" height="120" alt="Image" src="https://github.com/user-attachments/assets/ce809523-5bf0-4593-9344-38ed5beda25f" />
-
+<img width="479" height="131" alt="Image" src="https://github.com/user-attachments/assets/e1e8796b-4bc3-41f5-89e1-882e0df76cff" />
 
 # Installation
-
-Clone this project and create a virtual python 3.11 virtual environment named ct_venv (pyinstaller needs 3.11)
-example if you installed python3.11 with brew
 ```
-/opt/homebrew/bin/python3.11 -m venv ct_venv
-```
-
-Activate the the virtual environment
-```
-source ct_venv/bin/activate
-```
-
-Build and install the application
-```
-make build
 make install
 ```
+
+# Configuration
+To configure how CaffeinateToggle launches caffeinate and set custom timers (or remove existing ones) just edit the configuration
+file `$HOME/.caffeinate-toggle.conf`
+To create the configuration file you can just launch CaffeinateToggle and select "Save Config" in the menu to create the file
+with the default application values
