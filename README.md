@@ -2,7 +2,9 @@
 
 Caffinate Toggle is a small tool written in python to add an application indicator for the caffeinate tool
 
+<img width="214" height="71" alt="Image" src="https://github.com/user-attachments/assets/e5006817-aff2-4814-af55-ad39765ccbc1" />
 
+<img width="288" height="120" alt="Image" src="https://github.com/user-attachments/assets/ce809523-5bf0-4593-9344-38ed5beda25f" />
 
 
 # Installation
