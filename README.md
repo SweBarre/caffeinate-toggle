@@ -22,5 +22,6 @@ source ct_venv/bin/activate
 
 Build and install the application
 ```
+make build
 make install
 ```
