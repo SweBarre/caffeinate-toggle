@@ -51,7 +51,14 @@ clean:
 build: clean dev
 	@$(call check_env)
 	@echo "🏗️  Building $(APP_NAME)..."
-	@pyinstaller --noconfirm --windowed --name "Caffeinate Toggle" caffeinate_toggle.py
+	@pyinstaller \
+		--noconfirm \
+		--windowed \
+		--name "Caffeinate Toggle" \
+		--osx-bundle-identifier "nu.rre.caffeinate-toggle" \
+		caffeinate_toggle.py
+	@/usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "dist/Caffeinate Toggle.app/Contents/Info.plist" 2>/dev/null || \
+		/usr/libexec/PlistBuddy -c "Set :LSUIElement true" "dist/Caffeinate Toggle.app/Contents/Info.plist"
 	@echo "✅ Build complete: $(APP_BUNDLE)"
 
 # ----------------------------------------------
