@@ -1,17 +1,17 @@
 package caffeinate
 
 import (
+	"log"
 	"os/exec"
 	"strconv"
-	"log"
 	"sync"
 	"syscall"
 )
 
 var (
-	cmd       *exec.Cmd
-	cmdLock   sync.Mutex
-	isRunning bool
+	cmd               *exec.Cmd
+	cmdLock           sync.Mutex
+	isRunning         bool
 	CaffeinateOptions = []string{"-dims"}
 )
 
@@ -96,12 +96,4 @@ func Stop() error {
 	isRunning = false
 	cmd = nil
 	return nil
-}
-
-func concatOptions(opts []string) string {
-	out := ""
-	for _, o := range opts {
-		out += o
-	}
-	return out
 }
