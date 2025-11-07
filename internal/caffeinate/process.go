@@ -4,68 +4,38 @@ import (
 	"log"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
-	"syscall"
 )
 
 var (
-	cmd               *exec.Cmd
-	cmdLock           sync.Mutex
-	isRunning         bool
-	CaffeinateOptions = []string{"-dims"}
+	mu        sync.Mutex
+	cmd       *exec.Cmd
+	isRunning bool
 )
 
-func IsRunning() bool {
-	cmdLock.Lock()
-	defer cmdLock.Unlock()
-	return isRunning
-}
+// Start starts the caffeinate process with provided arguments.
+func Start(args string) error {
+	mu.Lock()
+	defer mu.Unlock()
 
-func Start(options []string) error {
-	cmdLock.Lock()
-	defer cmdLock.Unlock()
-
-	if isRunning {
-		log.Println("Caffeinate already running")
-		return nil
+	if cmd != nil && cmd.Process != nil {
+		log.Println("Start called, but caffeinate is already running")
+		return nil // Already running
 	}
 
-	args := []string{}
-	for _, opt := range options {
-		if opt == "t" {
-			// 't' means timeout; handled with next element
-			continue
-		}
-		if _, err := strconv.Atoi(opt); err == nil {
-			continue
-		}
-		// If the option already starts with '-', keep it as-is
-		if len(opt) > 0 && opt[0] == '-' {
-			args = append(args, opt)
-		} else {
-			// Add '-' prefix for single-letter options (d, i, m, s, u)
-			args = append(args, "-"+opt)
-		}
+	argList := strings.Fields(args)
+	cmd = exec.Command("caffeinate", argList...)
+	err := cmd.Start()
+	if err != nil {
+		log.Fatalf("Failed to start caffeinate: %v\n", err)
 	}
-	for i := 0; i < len(options); i++ {
-		if options[i] == "t" && i+1 < len(options) {
-			args = append(args, "-t", options[i+1])
-		}
-	}
-	log.Printf("Starting caffeinate with args: %v\n", args)
-	cmd = exec.Command("caffeinate", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-
+	log.Printf("Starting caffeinate (PID %d) with args: %v\n", cmd.Process.Pid, argList)
 	isRunning = true
-	log.Printf("Started caffeinate (PID %d)\n", cmd.Process.Pid)
 	go func() {
 		_ = cmd.Wait()
-		cmdLock.Lock()
-		defer cmdLock.Unlock()
+		mu.Lock()
+		defer mu.Unlock()
 		isRunning = false
 		log.Printf("caffeinate timedout (PID %d)\n", cmd.Process.Pid)
 		cmd = nil
@@ -73,27 +43,34 @@ func Start(options []string) error {
 	return nil
 }
 
-func StartTimed(seconds int, options []string) error {
-	strSeconds := strconv.Itoa(seconds)
-	opts := append(options, "t", strSeconds)
-	return Start(opts)
+// StartTimed starts caffeinate with provided args and a timeout in seconds.
+func StartTimed(args string, seconds int) error {
+	argsWithTimeout := args + " -t " + strconv.Itoa(seconds)
+	return Start(argsWithTimeout)
 }
 
+// Stop stops the caffeinate process if it's running.
 func Stop() error {
-	cmdLock.Lock()
-	defer cmdLock.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 
-	if cmd == nil || !isRunning {
-		log.Println("No caffeinate process to stop")
-		return nil
+	if cmd == nil || isRunning == false {
+		return nil // Not running
 	}
 
-	if err := cmd.Process.Kill(); err != nil {
+	err := cmd.Process.Kill()
+	if err != nil {
+		log.Printf("Failed to kill caffeinate (PID %d)\n", cmd.Process.Pid)
 		return err
 	}
-
 	log.Printf("Stopped caffeinate (PID %d)\n", cmd.Process.Pid)
 	isRunning = false
-	cmd = nil
-	return nil
+	return err
+}
+
+// IsRunning checks if the caffeinate process is running.
+func IsRunning() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return isRunning
 }

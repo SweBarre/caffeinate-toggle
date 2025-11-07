@@ -1,10 +1,11 @@
 package tray
 
 import (
-	"os"
-	"time"
-	"sort"
 	"log"
+	"os"
+	"sort"
+	"strings"
+	"time"
 
 	"github.com/SweBarre/caffeinate-toggle/internal/caffeinate"
 	"github.com/SweBarre/caffeinate-toggle/internal/config"
@@ -15,16 +16,17 @@ var cfg *config.Config
 
 func Run() {
 	cfg = config.Load()
-	caffeinate.CaffeinateOptions = cfg.Options
 	if cfg.CaffeinateOnStart && !caffeinate.IsRunning() {
-        caffeinate.Start(cfg.Options)
-    }
+		args := strings.Join(cfg.Options, " ")
+		err := caffeinate.Start(args)
+		if err != nil {
+			log.Fatalln("Failed to start caffeinate!")
+		}
+	}
 	systray.Run(onReady, onExit)
 }
 
 func onReady() {
-	//cfg = config.Load()
-	caffeinate.CaffeinateOptions = cfg.Options
 	// Prepare a slice of labels
 	timers := make([]string, 0, len(cfg.Timers))
 	for label := range cfg.Timers {
@@ -48,11 +50,15 @@ func onReady() {
 		item := systray.AddMenuItem(label, "Run caffeinate for "+label)
 		go func(sec int, m *systray.MenuItem) {
 			for range m.ClickedCh {
-				caffeinate.StartTimed(sec, cfg.Options)
+				args := strings.Join(cfg.Options, " ")
+				err := caffeinate.StartTimed(args, sec)
+				if err != nil {
+					log.Fatalln("Failed to start caffeinate!")
+				}
+				systray.SetTitle(cfg.RunningTitle)
 			}
 		}(seconds, item)
 	}
-
 
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit", "Quit Caffeinate Toggle")
@@ -75,10 +81,16 @@ func onReady() {
 			select {
 			case <-mToggle.ClickedCh:
 				if caffeinate.IsRunning() {
+					log.Println("Stopping....")
 					caffeinate.Stop()
 					systray.SetTitle(cfg.NotRunningTitle)
 				} else {
-					caffeinate.Start(cfg.Options)
+					log.Println("Starting")
+					args := strings.Join(cfg.Options, " ")
+					err := caffeinate.Start(args)
+					if err != nil {
+						log.Fatalln("Failed to start caffeinate!")
+					}
 					systray.SetTitle(cfg.RunningTitle)
 				}
 
@@ -95,8 +107,6 @@ func onReady() {
 		}
 	}()
 }
-
-
 
 func onExit() {
 	if caffeinate.IsRunning() {
