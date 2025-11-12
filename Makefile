@@ -3,13 +3,27 @@ APP_DIR = $(HOME)/Library/Application\ Support/$(APP_NAME)
 AGENT_DIR = $(HOME)/Library/LaunchAgents
 AGENT_PLIST = $(AGENT_DIR)/nu.rre.caffeinate-toggle.plist
 
+# Detect version:
+# If HEAD is tagged, use that tag (e.g. v1.2.3)
+# Otherwise, use "dev-" + short commit hash
+GIT_TAG := $(shell git describe --tags --exact-match 2>/dev/null)
+GIT_HASH := $(shell git rev-parse --short HEAD)
+ifeq ($(GIT_TAG),)
+VERSION := dev-$(GIT_HASH)
+else
+VERSION := $(GIT_TAG)
+endif
+
+LDFLAGS = -ldflags "-X 'main.Version=$(VERSION)'"
+
 
 init:
 	go mod init github.com/SweBarre/caffeinate-toggle
 	go mod tidy
 
 build:
-	go build -o dist/$(APP_NAME) ./cmd/caffeinate-toggle
+	@echo "Building $(APP_NAME) version $(VERSION)"
+	go build $(LDFLAGS) -o dist/$(APP_NAME) ./cmd/caffeinate-toggle
 
 install: build
 	@echo "Installing $(APP_NAME)..."

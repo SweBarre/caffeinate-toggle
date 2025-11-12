@@ -10,6 +10,9 @@ import (
 	"github.com/SweBarre/caffeinate-toggle/internal/caffeinate"
 )
 
+
+var Version = "dev"
+
 func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -22,6 +25,6 @@ func main() {
 		os.Exit(0)
 	}()
 
-	log.Println("Starting CaffeniateToggle")
+	log.Printf("Starting CaffeniateToggle: %v", Version)
 	tray.Run()
 }
