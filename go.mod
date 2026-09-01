@@ -4,7 +4,7 @@ go 1.25.4
 
 require (
 	github.com/getlantern/systray v1.2.2
-	gopkg.in/ini.v1 v1.67.1
+	gopkg.in/ini.v1 v1.67.3
 )
 
 require (
